@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Leaflet</title>
+    <!--<link rel="stylesheet" href="leaflet-code/leaflet.css" />
+    <script src="leaflet-code/leaflet.js"></script>-->
+    <link rel="stylesheet" href="leaflet-code/leaflet.css" />
+    <script src="leaflet-code/leaflet-src.js"></script>
+
+    <link rel="stylesheet" href="leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
+    <link rel="stylesheet" href="leaflet-draw/dist/leaflet.draw.css" />
+    <script src="leaflet-draw/dist/leaflet.draw.js"></script>
+    <script type="text/javascript" src="leaflet-canvasicon.js"></script>
+    <script type="text/javascript" src="mapa.js"></script>
+
+  </head>
+  <body>
+	  <div id="map" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+	  <script type="text/javascript">
+
+      //var demoMap = L.map('map').setView([40.453191, -3.509236], 6);
+      var baseLayer = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+
+        //map.panTo(new L.LatLng(latlng.lat, latlng.lng));
+      var demoMap = L.map('map', {
+          center: [-36.898300087136143, 174.71068783824072],
+          zoom: 13,
+          layers: [baseLayer]
+      });
+
+      //----------------------------------------------------------------------------------------------------------
+          var drawnItems = new L.FeatureGroup();
+      		demoMap.addLayer(drawnItems);
+
+      		var drawControl = new L.Control.Draw({
+      			draw: {
+      				position: 'topleft',
+      				polygon: {
+      					title: 'Draw a sexy polygon!',
+      					allowIntersection: false,
+      					drawError: {
+      						color: '#b00b00',
+      						timeout: 1000
+      					},
+      					shapeOptions: {
+      						color: '#bada55'
+      					},
+      					showArea: true
+      				},
+      				polyline: {
+      					metric: false
+      				},
+      				circle: {
+      					shapeOptions: {
+      						color: '#662d91'
+      					}
+      				}
+      			},
+      			edit: {
+      				featureGroup: drawnItems
+      			}
+      		});
+      		demoMap.addControl(drawControl);
+
+      		demoMap.on('draw:created', function (e) {
+      			var type = e.layerType,
+      				layer = e.layer;
+
+      			if (type === 'marker') {
+      				layer.bindPopup('A popup!');
+      			}
+
+      			drawnItems.addLayer(layer);
+      		});
+
+      //----------------------------------------------------------------------------------------------------------
+      // Test de equipos.....
+
+          var DevicesState = {
+                "METS001" : {
+                    "ECOM" : true,
+                    "STATE" : "ecom"
+                },
+                "METS002" : {
+                    "ECOM" : false,
+                    "STATE": "calling"
+                },
+                "METS003" : {
+                    "ECOM" : false,
+                    "STATE": "active"
+                },
+                "METS004" : {
+                    "ECOM" : false,
+                    "STATE": "ready"
+                },
+                "METS005" : {
+                    "ECOM" : false,
+                    "STATE": "ready",
+                    "ALARM": true
+                },
+                "METS006" : {
+                    "ECOM" : false,
+                    "STATE": "ready",
+                    "ALARM": true,
+                    "MAINTENANCE": true
+                },
+
+                //PTZ
+                  "PTZS001" : {
+                      "ECOM" : true,
+                      "STATE" : "ecom"
+                  },
+                  "PTZS002" : {
+                      "ECOM" : false,
+                      "STATE": "ready",
+                      "MAINTENANCE": true
+                  },
+                  "PTZS003" : {
+                      "ECOM" : false,
+                      "STATE": "ready"
+                  },
+                  "PTZS004" : {
+                      "ECOM" : false,
+                      "STATE": "ready"
+                  },
+                  "PTZS005" : {
+                      "ECOM" : false,
+                      "STATE": "ready",
+                      "ALARM": true
+                  },
+                  "PTZS006" : {
+                      "ECOM" : false,
+                      "STATE": "ready",
+                      "ALARM": true,
+                      "MAINTENANCE": true
+                  },
+                  "PTZS007" : {
+                      "ECOM" : true,
+                      "STATE" : "ecom"
+                  },
+                  "PTZS008" : {
+                      "ECOM" : false,
+                      "STATE": "ready"
+                  },
+                  "PTZS009" : {
+                      "ECOM" : false,
+                      "STATE": "ready",
+                      "ALARM": true,
+                      "MAINTENANCE": true
+                  },
+                  "PTZS010" : {
+                      "ECOM" : false,
+                      "STATE": "ready",
+                      "ALARM": true
+                  }
+          };
+
+          function getDeviceValue (devId, variable)
+          {
+              var device = DevicesState[devId];
+
+              if (device === undefined)
+                  return null;
+              else
+              {
+                  var value = device[variable];
+
+                  if (value !== undefined)
+                      return value;
+                  else
+                      return null;
+              }
+          }
+
+          function getDeviceState (device)
+          {
+              return getDeviceValue(device, 'STATE');
+          }
+
+          var ImageCache = {};
+
+          function getIconImage (imgName, updateCback)
+          {
+              var imgUrl = 'ImagesMap/' + imgName + '.png';
+
+              if (imgUrl in ImageCache)
+                  return ImageCache[imgUrl];
+              else
+              {
+                  var imageObj = new Image();
+                  imageObj.onload = function() {
+                      ImageCache[imgUrl] = imageObj;
+                      if (updateCback !== 'undefined')
+                          updateCback(imgUrl, imageObj);
+                  };
+
+                  imageObj.src = imgUrl;
+
+                  return imageObj;
+              }
+          }
+        //----------------------------------------------------------------------------------------------------------
+
+       var layerMet =  L.geoJson(met, {
+              pointToLayer: function(feature, latlng) {
+                const icons = generateMET_iconList(feature.properties.id);
+                const newMarker = L.marker (latlng);
+
+                updateMarker (newMarker, icons);
+
+                return newMarker;
+              }
+            });
+            layerMet.addTo(demoMap);
+
+        var layerPtz = L.geoJson(ptz, {
+              pointToLayer: function(feature, latlng) {
+                const icons = generatePTZ_iconList(feature.properties.id);
+                const newMarker = L.marker (latlng);
+
+                updateMarker (newMarker, icons);
+
+                return newMarker;
+              }
+            });
+            layerPtz.addTo(demoMap);
+
+      //Updates a marker with an iconList
+      function updateMarker (marker, iconList)
+      {
+        const onLoadFn = function(){ updateMarker(marker, iconList);}
+
+        const newIcon = L.canvasIcon ({
+          iconSize: [50, 50],
+          iconAnchor: [25, 25],
+          drawIcon: function(icon, type) {
+            drawIconList (icon, type, this.options.iconSize, iconList, onLoadFn)
+          }
+        });
+        marker.setIcon (newIcon);
+      }
+
+      //Draws an icon using a icon list that is rendered stacked.
+      function drawIconList (icon, type, size, iconList, onLoadCback)
+      {
+        if (type != 'icon')
+          return;
+
+        var ctx = icon.getContext('2d');
+        var center = L.point(Math.floor(size[0] / 2), Math.floor(size[1] / 2));
+
+        for (i=0; i < iconList.length; ++i)
+        {
+            var image = getIconImage(iconList[i], onLoadCback);
+
+            if (image.complete)
+                ctx.drawImage(image, 0, 0, size[0], size[1]);
+        }
+      }
+
+      //Generates the icon list for a MET device
+      function generateMET_iconList(id)
+      {
+        var icons = [];
+
+        console.log(id);
+
+        if (id === undefined)
+            icons.push('AL');
+        else
+        {
+            var state = getDeviceState(id);
+            var icon = 'MET_UNKNOWN';
+
+            switch (state)
+            {
+                case 'ready':
+                    icon = 'MET';
+                    break;
+                case 'active':
+                    icon = 'MET_ACTIVE';
+                    break;
+                case 'calling':
+                    icon = 'MET_CALLING';
+                    break;
+            }
+
+            icons.push (icon);
+
+            if (getDeviceValue(id, 'ALARM') === true)
+                icons.push('AL_128x128');
+
+            if (getDeviceValue(id, 'MAINTENANCE') === true)
+                icons.push('AIM_64x64');
+        }
+
+        return icons;
+      }
+
+      //Generates the icon list for a PTZ device
+      function generatePTZ_iconList(id)
+      {
+        var icons = [];
+
+        console.log(id);
+
+        if (id === undefined)
+                      icons.push('AL');
+        else
+        {
+          var state = getDeviceState(id);
+          var icon = 'PTZ_UNKNOWN';
+
+          if (state === 'ready')
+          {
+              icon = 'PTZ';
+          }
+
+          icons.push (icon);
+
+          if (getDeviceValue(id, 'ALARM') === true)
+              icons.push('AL_128x128');
+
+          if (getDeviceValue(id, 'MAINTENANCE') === true)
+              icons.push('AIM_128x128');
+      }
+
+        return icons;
+      }
+
+
+
+      var layerTierra = L.geoJson(tierra, {style:  function(feature) {
+            return {
+                weight: 3,
+                opacity: 1,
+                color: '#f9f8f7',
+                dashArray: '0',
+                fillOpacity: 0.7,
+                fillColor: '#f9f8f7'
+            };
+        }});
+        layerTierra.addTo(demoMap);
+
+      var layerMar = L.geoJson(mar, {style:  function(feature) {
+            return {
+                weight: 3,
+                opacity: 1,
+                color: '#c8e6ff',
+                dashArray: '0',
+                fillOpacity: 0.5,
+                fillColor: '#c8e6ff'
+            };
+        }});
+        layerMar.addTo(demoMap);
+
+      L.geoJson(verde, {style: function(feature) {
+          return {
+              weight: 2,
+              opacity: 1,
+              color: '#badfc0',
+              dashArray: '0',
+              fillOpacity: 0.7,
+              fillColor: '#badfc0'
+          };
+      }}).addTo(demoMap);
+
+      L.geoJson(poblacion, {style: function(feature) {
+          return {
+              weight: 3,
+              opacity: 1,
+              color: '#e8e6cd',
+              dashArray: '0',
+              fillOpacity: 0.7,
+              fillColor: '#e8e6cd'
+          };
+      }}).addTo(demoMap);
+
+      L.geoJson(trazado, {style: function(feature) {
+          return {
+              weight: 1,
+              opacity: 1,
+              color: '#3c4da6',
+            //  dashArray: '0',
+            //  fillOpacity: 0.7,
+            //  fillColor: '#badfc0'
+          };
+      }}).addTo(demoMap);
+
+      L.geoJson(carriles, {style: function(feature) {
+            return {
+                weight: 1.5,
+                opacity: 1,
+                color: '#536175',
+                dashArray: '4',
+                fillOpacity: 0.7,
+                fillColor: '#536175'
+            };
+        }}).addTo(demoMap);
+
+
+
+
+
+      L.geoJson(ohd, {
+            pointToLayer: function(feature, latlng) {
+               var smallIcon = L.icon({
+                 iconSize: [47, 47],
+                 iconAnchor: [33, 47],
+                 popupAnchor:  [1, -24],
+                 iconUrl: 'ImagesMap/OHD_ON.png'
+               });
+               return L.marker(latlng, {icon: smallIcon});
+            }
+          }).addTo(demoMap);
+
+
+
+      L.geoJson(vms, {
+            pointToLayer: function(feature, latlng) {
+               var smallIcon = L.icon({
+                 iconSize: [47, 47],
+                 iconAnchor: [33, 47],
+                 popupAnchor:  [1, -24],
+                 iconUrl: 'ImagesMap/VMS.png'
+               });
+               return L.marker(latlng, {icon: smallIcon});
+            }
+          }).addTo(demoMap);
+
+      L.geoJson(tv, {
+            pointToLayer: function(feature, latlng) {
+               var smallIcon = L.icon({
+                  iconSize: [47, 47],
+                  iconAnchor: [33, 47],
+                  popupAnchor:  [1, -24],
+                  iconUrl: 'ImagesMap/TV_.png'
+               });
+               console.log('latlng= '+latlng);
+               return L.marker(latlng, {icon: smallIcon});
+            }
+          }).addTo(demoMap);
+
+      L.geoJson(bar, {
+            pointToLayer: function(feature, latlng) {
+               var smallIcon = L.icon({
+                  iconSize: [47, 47],
+                  iconAnchor: [33, 47],
+                  popupAnchor:  [1, -24],
+                  iconUrl: 'ImagesMap/BA_CLOSE.png'
+               });
+               return L.marker(latlng, {icon: smallIcon});
+            }
+          }).addTo(demoMap);
+
+//--------------------------------------------------------------------------------------------------------
+
+
+    var markers = L.markerClusterGroup({ animateAddingMarkers : true });
+
+//--------------------------------------------------------------------------------------------------------
+
+
+          var newIcon = L.icon({
+             iconSize: [47, 47],
+             iconAnchor: [33, 47],
+             popupAnchor:  [1, -24],
+             iconUrl: 'ImagesMap/1.png'
+          });
+          function aleatorio(a,b) {
+            return Math.random()*(b-a)+a;
+          }
+         var lat, lng;
+         for (var i = 0; i < 1000; i++) {
+           lat = aleatorio(174.63356409764728,174.78787036632631);
+           lng = aleatorio(-36.922658559235117,-36.859893207655674);
+           var marker = L.marker([lng, lat], {icon: newIcon});
+				   markers.addLayer(marker);
+         }
+
+      var tiempo = (new Date).getTime();
+
+      function changeLayerState ()
+      {
+        var tiempoReal = (new Date).getTime();
+        var tiempoPasado = tiempoReal-tiempo;
+        if((tiempoReal-tiempo)>=5000){
+          tiempo = tiempoReal;
+
+
+
+        }
+      }
+
+      setInterval("changeLayerState()", 1000);
+
+          demoMap.addLayer(markers);
+
+          L.control.scale().addTo(demoMap);
+    </script>
+  </body>
+</html>
