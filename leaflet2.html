@@ -458,7 +458,7 @@
 //--------------------------------------------------------------------------------------------------------
 
 
-    var markers = L.markerClusterGroup({ animateAddingMarkers : true });
+    //var markers = L.markerClusterGroup({ animateAddingMarkers : true });
 
 //--------------------------------------------------------------------------------------------------------
 
@@ -476,27 +476,12 @@
          for (var i = 0; i < 1000; i++) {
            lat = aleatorio(174.63356409764728,174.78787036632631);
            lng = aleatorio(-36.922658559235117,-36.859893207655674);
-           var marker = L.marker([lng, lat], {icon: newIcon});
-				   markers.addLayer(marker);
+           //var marker = L.marker([lng, lat], {icon: newIcon});
+				   //markers.addLayer(marker);
+            L.marker([lng, lat], {icon: newIcon}).addTo(demoMap);
          }
 
-      var tiempo = (new Date).getTime();
-
-      function changeLayerState ()
-      {
-        var tiempoReal = (new Date).getTime();
-        var tiempoPasado = tiempoReal-tiempo;
-        if((tiempoReal-tiempo)>=5000){
-          tiempo = tiempoReal;
-
-
-
-        }
-      }
-
-      setInterval("changeLayerState()", 1000);
-
-          demoMap.addLayer(markers);
+          //demoMap.addLayer(markers);
 
           L.control.scale().addTo(demoMap);
     </script>
